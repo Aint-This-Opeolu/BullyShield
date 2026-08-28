@@ -6,7 +6,7 @@ const API_URL = configuredApiUrl
     ? configuredApiUrl
     : `${configuredApiUrl}/api`
   : '/api';
-let csrfToken = null;
+let csrfToken = sessionStorage.getItem('csrfToken');
 
 const api = axios.create({
   baseURL: API_URL,
@@ -34,9 +34,29 @@ export async function primeCsrf() {
   try {
     const { data } = await api.get('/health');
     csrfToken = data.csrfToken || null;
+    if (csrfToken) {
+      sessionStorage.setItem('csrfToken', csrfToken);
+      api.defaults.headers.common['X-CSRF-Token'] = csrfToken;
+    }
+    return csrfToken;
   } catch (err) {
-    // ignore — health check failing here doesn't block the app
+    return null;
   }
 }
+
+api.interceptors.response.use(null, async (error) => {
+  const request = error.config;
+  if (
+    error.response?.status === 403 &&
+    request &&
+    !request._csrfRetry &&
+    !request.url?.endsWith('/health')
+  ) {
+    request._csrfRetry = true;
+    await primeCsrf();
+    return api(request);
+  }
+  return Promise.reject(error);
+});
 
 export default api;
