@@ -60,6 +60,11 @@ npm run seed                # creates a default Administrator and Counsellor acc
 npm run dev                  # starts the API on http://localhost:5000
 ```
 
+For Render, set the backend Start Command to `npm run start:render`. It runs
+the PostgreSQL schema migration, seeds the initial staff accounts, and starts
+the API in one command. Keep `npm start` for normal starts after the first
+deployment.
+
 Default seeded accounts (**change these passwords immediately in any real
 deployment**):
 
