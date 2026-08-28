@@ -1,0 +1,122 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String           @id @db.Text
+  userId          String           @unique @map("userId") @db.Text
+  email           String           @unique @db.Text
+  passwordHash    String           @map("passwordHash") @db.Text
+  fullName        String           @map("fullName") @db.Text
+  role            String           @db.Text
+  department      String?          @db.Text
+  isActive        Boolean          @default(true) @map("isActive")
+  createdAt       DateTime         @default(now()) @map("createdAt") @db.Timestamptz(6)
+  updatedAt       DateTime         @default(now()) @map("updatedAt") @db.Timestamptz(6)
+  incidentReports IncidentReport[] @relation("ReportReporter")
+  assignedCases   Case[]            @relation("CaseAssignee")
+  caseNotes       CaseNote[]        @relation("NoteAuthor")
+  auditLogs       AuditLog[]        @relation("AuditUser")
+
+  @@index([role])
+  @@index([isActive])
+  @@map("users")
+}
+
+model IncidentReport {
+  id            String        @id @db.Text
+  reportId      String        @unique @map("reportId") @db.Text
+  bullyingType  String        @map("bullyingType") @db.Text
+  description   String        @db.Text
+  descriptionIv String        @map("descriptionIv") @db.Text
+  descriptionTag String       @map("descriptionTag") @db.Text
+  location      String        @db.Text
+  dateSubmitted DateTime      @default(now()) @map("dateSubmitted") @db.Timestamptz(6)
+  isAnonymous   Boolean       @default(false) @map("isAnonymous")
+  trackingCode  String        @unique @map("trackingCode") @db.Text
+  status        String        @default("PENDING") @db.Text
+  reporterId    String?       @map("reporterId") @db.Text
+  reporter      User?         @relation("ReportReporter", fields: [reporterId], references: [id], onDelete: SetNull)
+  evidence      Evidence[]
+  case          Case?
+
+  @@index([status])
+  @@index([bullyingType])
+  @@index([dateSubmitted])
+  @@index([reporterId])
+  @@map("incident_reports")
+}
+
+model Evidence {
+  id           String         @id @db.Text
+  fileId       String         @unique @map("fileId") @db.Text
+  reportId     String         @map("reportId") @db.Text
+  filePath     String         @map("filePath") @db.Text
+  fileIv       String         @map("fileIv") @db.Text
+  fileTag      String         @map("fileTag") @db.Text
+  originalName String         @map("originalName") @db.Text
+  mimeType     String         @map("mimeType") @db.Text
+  fileSize     Int            @map("fileSize")
+  uploadDate   DateTime       @default(now()) @map("uploadDate") @db.Timestamptz(6)
+  report       IncidentReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  @@index([reportId])
+  @@map("evidence")
+}
+
+model Case {
+  id               String         @id @db.Text
+  caseId           String         @unique @map("caseId") @db.Text
+  reportId         String         @unique @map("reportId") @db.Text
+  assignedToId     String?        @map("assignedToId") @db.Text
+  status           String         @default("PENDING") @db.Text
+  priority         String         @default("Normal") @db.Text
+  suggestedHandler String?        @map("suggestedHandler") @db.Text
+  resolutionOutcome String?       @map("resolutionOutcome") @db.Text
+  createdAt        DateTime       @default(now()) @map("createdAt") @db.Timestamptz(6)
+  updatedAt        DateTime       @default(now()) @map("updatedAt") @db.Timestamptz(6)
+  report           IncidentReport  @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  assignedTo       User?          @relation("CaseAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  notes            CaseNote[]
+
+  @@index([assignedToId])
+  @@index([status])
+  @@index([priority])
+  @@map("cases")
+}
+
+model CaseNote {
+  id         String   @id @db.Text
+  caseId     String   @map("caseId") @db.Text
+  authorId   String?  @map("authorId") @db.Text
+  authorName String   @map("authorName") @db.Text
+  note       String   @db.Text
+  createdAt  DateTime @default(now()) @map("createdAt") @db.Timestamptz(6)
+  case       Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  author     User?    @relation("NoteAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@index([caseId])
+  @@index([authorId])
+  @@index([createdAt])
+  @@map("case_notes")
+}
+
+model AuditLog {
+  id               String   @id @db.Text
+  logId            String   @unique @map("logId") @db.Text
+  userId           String?  @map("userId") @db.Text
+  action           String   @db.Text
+  timestamp        DateTime @default(now()) @db.Timestamptz(6)
+  affectedRecordId String?  @map("affectedRecordId") @db.Text
+  user             User?    @relation("AuditUser", fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([timestamp])
+  @@index([userId])
+  @@index([affectedRecordId])
+  @@map("audit_logs")
+}

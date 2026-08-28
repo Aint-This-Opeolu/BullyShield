@@ -1,7 +1,6 @@
 require('dotenv').config();
 
-// node:sqlite is stable enough for this app's needs; silence the
-// experimental-feature warning so server logs stay clean.
+// Keep non-experimental warnings visible while avoiding noisy runtime logs.
 process.removeAllListeners('warning');
 process.on('warning', (w) => {
   if (w.name !== 'ExperimentalWarning') console.warn(w);

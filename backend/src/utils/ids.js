@@ -1,30 +1,57 @@
 /**
- * ID generation helpers.
+ * ID generation helpers for BullyShield.
  *
- * generateTrackingCode() implements Algorithm 4 (Tracking Code Generation):
- * a cryptographically secure, uppercase alphanumeric code, checked for
- * uniqueness by the caller before being persisted.
+ * Uses cryptographically secure random bytes to generate:
+ * - Tracking codes for anonymous report tracking
+ * - Prefixed IDs for reports, cases, evidence, and users
  */
 
 const crypto = require('crypto');
 
-const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // excludes ambiguous chars (0,O,1,I)
+const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+// Excludes ambiguous characters: 0, O, 1, I
 
 function randomAlphaNumeric(length) {
   const bytes = crypto.randomBytes(length);
-  let out = '';
+
+  let result = '';
+
   for (let i = 0; i < length; i++) {
-    out += ALPHABET[bytes[i] % ALPHABET.length];
+    result += ALPHABET[bytes[i] % ALPHABET.length];
   }
-  return out;
+
+  return result;
 }
 
-/** Algorithm 4: Tracking Code Generation (uniqueness is verified by caller) */
+/**
+ * Generates an 8-character tracking code.
+ *
+ * Example:
+ *   X7KQ4MNP
+ *
+ * Uniqueness must be checked by the caller/database.
+ */
 function generateTrackingCode() {
   return randomAlphaNumeric(8);
 }
 
+/**
+ * Generates a prefixed identifier.
+ *
+ * Examples:
+ *   RPT-X7KQ4MNP
+ *   CSE-4PQ8ZK2H
+ *   EVD-M7NQ5R8T
+ *   USR-9KX4PQL7
+ */
 function generatePrefixedId(prefix) {
+  if (
+    typeof prefix !== 'string' ||
+    !/^[A-Z]{2,10}$/.test(prefix)
+  ) {
+    throw new Error('Invalid ID prefix');
+  }
+
   return `${prefix}-${randomAlphaNumeric(8)}`;
 }
 

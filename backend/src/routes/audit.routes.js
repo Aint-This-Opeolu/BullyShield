@@ -1,25 +1,65 @@
 const express = require('express');
-const { all, get } = require('../db');
-const { authenticate, authorize } = require('../middleware/auth');
+
+const { all } = require('../db');
+
+const {
+  authenticate,
+  authorize,
+} = require('../middleware/auth');
 
 const router = express.Router();
 
-/** GET /api/audit-logs — View Audit Logs (4.2.2 iv), Administrator only */
-router.get('/', authenticate, authorize('ADMINISTRATOR'), async (req, res) => {
-  const logs = all('SELECT * FROM audit_logs ORDER BY timestamp DESC LIMIT 500');
+/**
+ * GET /api/audit-logs
+ *
+ * Administrator only.
+ */
+router.get(
+  '/',
+  authenticate,
+  authorize('ADMINISTRATOR'),
+  async (req, res) => {
+    try {
+      const logs = await all(
+        `SELECT
+           a."logId",
+           a.action,
+           a."timestamp",
+           a."affectedRecordId",
+           u."fullName",
+           u.role
+         FROM audit_logs a
+         LEFT JOIN users u
+           ON u.id = a."userId"
+         ORDER BY a."timestamp" DESC
+         LIMIT 500`
+      );
 
-  const shaped = logs.map((l) => {
-    const user = l.userId ? get('SELECT fullName, role FROM users WHERE id = :id', { id: l.userId }) : null;
-    return {
-      logId: l.logId,
-      action: l.action,
-      timestamp: l.timestamp,
-      affectedRecordId: l.affectedRecordId,
-      performedBy: user ? `${user.fullName} (${user.role})` : 'System / Anonymous',
-    };
-  });
+      const shaped = logs.map((log) => ({
+        logId: log.logId,
+        action: log.action,
+        timestamp: log.timestamp,
+        affectedRecordId:
+          log.affectedRecordId,
 
-  return res.json({ logs: shaped });
-});
+        performedBy:
+          log.fullName
+            ? `${log.fullName} (${log.role})`
+            : 'System / Anonymous',
+      }));
+
+      return res.json({
+        logs: shaped,
+      });
+    } catch (error) {
+      console.error(error);
+
+      return res.status(500).json({
+        error:
+          'Failed to retrieve audit logs',
+      });
+    }
+  }
+);
 
 module.exports = router;
