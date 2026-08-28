@@ -18,7 +18,7 @@ async function run(sql, params = []) {
  */
 async function get(sql, params = []) {
   const result = await prisma.$queryRawUnsafe(sql, ...params);
-  return result.rows[0];
+  return result[0];
 }
 
 /**
@@ -26,7 +26,7 @@ async function get(sql, params = []) {
  */
 async function all(sql, params = []) {
   const result = await prisma.$queryRawUnsafe(sql, ...params);
-  return result.rows;
+  return result;
 }
 
 module.exports = {
