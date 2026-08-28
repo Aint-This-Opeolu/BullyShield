@@ -17,8 +17,10 @@ const SAFE_METHODS = new Set([
  * X-CSRF-Token request header.
  */
 function issueCsrfCookie(req, res, next) {
-  if (!req.cookies?.[COOKIE_NAME]) {
+  const existingToken = req.cookies?.[COOKIE_NAME];
+  if (!existingToken) {
     const token = crypto.randomBytes(32).toString('hex');
+    req.csrfToken = token;
 
     res.cookie(COOKIE_NAME, token, {
       httpOnly: false,
@@ -27,6 +29,8 @@ function issueCsrfCookie(req, res, next) {
       path: '/',
       maxAge: 8 * 60 * 60 * 1000,
     });
+  } else {
+    req.csrfToken = existingToken;
   }
 
   return next();

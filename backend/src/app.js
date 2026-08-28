@@ -58,7 +58,9 @@ app.use('/api/auth/register', authLimiter);
 app.use(issueCsrfCookie);
 app.use('/api', verifyCsrf);
 
-app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
+app.get('/api/health', (req, res) =>
+  res.json({ status: 'ok', csrfToken: req.csrfToken })
+);
 
 app.use('/api/auth', authRoutes);
 app.use('/api/reports', reportsRoutes);
