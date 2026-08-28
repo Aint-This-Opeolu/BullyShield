@@ -16,7 +16,7 @@ const router = express.Router();
 
 const COOKIE_OPTS = {
   httpOnly: true,
-  sameSite: 'lax',
+  sameSite: 'none',
   secure: process.env.NODE_ENV === 'production',
   maxAge: 8 * 60 * 60 * 1000,
   path: '/',
