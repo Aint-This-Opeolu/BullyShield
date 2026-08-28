@@ -142,7 +142,7 @@ export default function ReportDetailModal({ reportId, onClose, onChanged, staff 
                   {report.evidence.map((ev) => (
                     <li key={ev.fileId}>
                       <a
-                        href={`${import.meta.env.VITE_API_URL || '/api'}/evidence/${ev.fileId}`}
+                        href={`${(import.meta.env.VITE_API_URL || '').replace(/\/$/, '').replace(/\/api$/, '') || ''}/api/evidence/${ev.fileId}`}
                         target="_blank"
                         rel="noreferrer"
                         className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm text-brand-700 hover:bg-brand-50"
