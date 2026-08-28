@@ -24,7 +24,7 @@ function issueCsrfCookie(req, res, next) {
 
     res.cookie(COOKIE_NAME, token, {
       httpOnly: false,
-      sameSite: 'lax',
+      sameSite: 'none',
       secure: process.env.NODE_ENV === 'production',
       path: '/',
       maxAge: 8 * 60 * 60 * 1000,

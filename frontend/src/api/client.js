@@ -32,7 +32,9 @@ api.interceptors.request.use((config) => {
 
 export async function primeCsrf() {
   try {
-    const { data } = await api.get('/health');
+    const { data } = await api.get('/health', {
+      params: { csrf: Date.now() },
+    });
     csrfToken = data.csrfToken || null;
     if (csrfToken) {
       sessionStorage.setItem('csrfToken', csrfToken);
