@@ -6,7 +6,8 @@ const API_URL = configuredApiUrl
     ? configuredApiUrl
     : `${configuredApiUrl}/api`
   : '/api';
-let csrfToken = sessionStorage.getItem('csrfToken');
+let csrfToken = null;
+let csrfReady = null;
 
 const api = axios.create({
   baseURL: API_URL,
@@ -21,9 +22,10 @@ function getCookie(name) {
 // Attach the CSRF token (double-submit cookie pattern) to every
 // state-changing request. The cookie is set by the backend on first
 // contact and refreshed automatically as needed.
-api.interceptors.request.use((config) => {
+api.interceptors.request.use(async (config) => {
   const method = (config.method || 'get').toUpperCase();
   if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) {
+    if (!csrfToken) await primeCsrf();
     const token = csrfToken || getCookie('csrfToken');
     if (token) config.headers['X-CSRF-Token'] = token;
   }
@@ -31,19 +33,22 @@ api.interceptors.request.use((config) => {
 });
 
 export async function primeCsrf() {
-  try {
-    const { data } = await api.get('/health', {
-      params: { csrf: Date.now() },
-    });
+  if (csrfReady) return csrfReady;
+
+  csrfReady = api.get('/health', {
+    params: { csrf: Date.now() },
+  }).then(({ data }) => {
     csrfToken = data.csrfToken || null;
     if (csrfToken) {
       sessionStorage.setItem('csrfToken', csrfToken);
       api.defaults.headers.common['X-CSRF-Token'] = csrfToken;
     }
     return csrfToken;
-  } catch (err) {
-    return null;
-  }
+  }).catch(() => null).finally(() => {
+    csrfReady = null;
+  });
+
+  return csrfReady;
 }
 
 api.interceptors.response.use(null, async (error) => {
